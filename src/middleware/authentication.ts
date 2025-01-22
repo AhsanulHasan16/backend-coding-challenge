@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { ERROR_MESSAGES } from "../constants/messages";
+import redisClient from "../redisClient";
 
 const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET!;
 export const authenticate = async (
@@ -15,6 +16,12 @@ export const authenticate = async (
   }
 
   try {
+    const isInvalid = await redisClient.get(token);
+    if (isInvalid) {
+      res.status(401).json({ error: ERROR_MESSAGES.UNAUTHORIZED });
+      return;
+    }
+    
     const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET) as {
       id: string;
     };
